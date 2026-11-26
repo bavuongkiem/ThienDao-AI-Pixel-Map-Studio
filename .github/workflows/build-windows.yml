@@ -18,7 +18,7 @@ jobs:
       - name: Check syntax
         run: python -m py_compile main.py engine.py
       - name: Build Windows app
-        run: python -m PyInstaller --noconfirm --onedir --windowed --collect-all rembg --collect-all onnxruntime --name ThienDaoMapStudio main.py
+        run: python -m PyInstaller --noconfirm --onedir --windowed --collect-all rembg --collect-all onnxruntime --copy-metadata pymatting --name ThienDaoMapStudio main.py
       - uses: actions/upload-artifact@v4
         with:
           name: ThienDaoMapStudio-Windows
