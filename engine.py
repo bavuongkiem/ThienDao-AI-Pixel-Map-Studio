@@ -16,9 +16,12 @@ class Studio:
         p=self.root/'plan.json'
         if p.exists(): return json.loads(p.read_text(encoding='utf-8'))
         self.status('Kế hoạch','đang chạy')
-        schema={'type':'object','properties':{'assets':{'type':'array','minItems':3,'maxItems':12,'items':{'type':'object','properties':{'name':{'type':'string'},'prompt':{'type':'string'},'kind':{'type':'string','enum':['building','nature','ground']}},'required':['name','prompt','kind']}}},'required':['assets']}
-        r=requests.post('http://127.0.0.1:11434/api/chat',json={'model':self.model,'stream':False,'keep_alive':0,'format':schema,'messages':[{'role':'system','content':'Design a game asset list. English image prompts, consistent pixel art angle and palette, isolated single object on plain white background for buildings/nature; seamless square ground texture for ground. Include exactly one ground asset and at least two objects. Return JSON only.'},{'role':'user','content':style+'; '+prompt}]},timeout=300); r.raise_for_status(); data=json.loads(r.json()['message']['content'])
-        if not 3<=len(data['assets'])<=12 or sum(a['kind']=='ground' for a in data['assets'])!=1: raise ValueError('Kế hoạch AI không hợp lệ: cần 3–12 asset, đúng một nền.')
+        schema={'type':'object','properties':{'assets':{'type':'array','minItems':3,'maxItems':6,'items':{'type':'object','properties':{'name':{'type':'string'},'prompt':{'type':'string'},'kind':{'type':'string','enum':['building','nature','ground']}},'required':['name','prompt','kind']}}},'required':['assets']}
+        try:
+            r=requests.post('http://127.0.0.1:11434/api/chat',json={'model':self.model,'stream':False,'keep_alive':0,'options':{'num_predict':1024},'format':schema,'messages':[{'role':'system','content':'Design a game asset list. English image prompts, consistent pixel art angle and palette, isolated single object on plain white background for buildings/nature; seamless square ground texture for ground. Include exactly one ground asset and at least two objects. Return JSON only.'},{'role':'user','content':style+'; '+prompt}]},timeout=(10,900)); r.raise_for_status(); data=json.loads(r.json()['message']['content'])
+        except requests.exceptions.ReadTimeout as e:
+            raise TimeoutError('Ollama chưa trả kế hoạch sau 15 phút. Kiểm tra Ollama còn hoạt động rồi thử lại; nếu vẫn lỗi, chọn một model Ollama nhẹ hơn.') from e
+        if not 3<=len(data['assets'])<=6 or sum(a['kind']=='ground' for a in data['assets'])!=1: raise ValueError('Kế hoạch AI không hợp lệ: cần 3–6 asset, đúng một nền.')
         for i,a in enumerate(data['assets']): a['id']=f'asset_{i:02d}'
         p.write_text(json.dumps(data,ensure_ascii=False,indent=2),encoding='utf-8'); self.status('Kế hoạch','hoàn tất'); return data
     def graph(self,prompt):
