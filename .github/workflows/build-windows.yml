@@ -19,6 +19,13 @@ jobs:
         run: python -m py_compile main.py engine.py
       - name: Build Windows app
         run: python -m PyInstaller --noconfirm --onedir --windowed --collect-all rembg --collect-all onnxruntime --copy-metadata pymatting --name ThienDaoMapStudio main.py
+      - name: Place MSVC runtime beside executable
+        shell: pwsh
+        run: |
+          $bundle = 'dist/ThienDaoMapStudio'
+          $dlls = Get-ChildItem -LiteralPath "$bundle/_internal" -Filter '*140*.dll'
+          if ($dlls.Count -eq 0) { throw 'No bundled MSVC runtime DLLs found.' }
+          $dlls | Copy-Item -Destination $bundle -Force
       - uses: actions/upload-artifact@v4
         with:
           name: ThienDaoMapStudio-Windows
