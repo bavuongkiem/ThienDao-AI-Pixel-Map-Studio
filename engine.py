@@ -17,10 +17,21 @@ class Studio:
         if p.exists(): return json.loads(p.read_text(encoding='utf-8'))
         self.status('Kế hoạch','đang chạy')
         schema={'type':'object','properties':{'assets':{'type':'array','minItems':3,'maxItems':6,'items':{'type':'object','properties':{'name':{'type':'string'},'prompt':{'type':'string'},'kind':{'type':'string','enum':['building','nature','ground']}},'required':['name','prompt','kind']}}},'required':['assets']}
-        try:
-            r=requests.post('http://127.0.0.1:11434/api/chat',json={'model':self.model,'stream':False,'keep_alive':0,'options':{'num_predict':1024},'format':schema,'messages':[{'role':'system','content':'Design a game asset list. English image prompts, consistent pixel art angle and palette, isolated single object on plain white background for buildings/nature; seamless square ground texture for ground. Include exactly one ground asset and at least two objects. Return JSON only.'},{'role':'user','content':style+'; '+prompt}]},timeout=(10,900)); r.raise_for_status(); data=json.loads(r.json()['message']['content'])
-        except requests.exceptions.ReadTimeout as e:
-            raise TimeoutError('Ollama chưa trả kế hoạch sau 15 phút. Kiểm tra Ollama còn hoạt động rồi thử lại; nếu vẫn lỗi, chọn một model Ollama nhẹ hơn.') from e
+        data=None
+        for attempt in range(2):
+            try:
+                r=requests.post('http://127.0.0.1:11434/api/chat',json={'model':self.model,'stream':False,'keep_alive':'5m','options':{'num_predict':2048,'temperature':0},'format':schema,'messages':[{'role':'system','content':'Design a game asset list. English image prompts, consistent pixel art angle and palette, isolated single object on plain white background for buildings/nature; seamless square ground texture for ground. Include exactly one ground asset and at least two objects. Return one valid JSON object matching the schema, with no markdown or extra text.'},{'role':'user','content':style+'; '+prompt}]},timeout=(10,900)); r.raise_for_status()
+                data=json.loads(r.json()['message']['content'])
+                if not isinstance(data,dict) or not isinstance(data.get('assets'),list) or not 3<=len(data['assets'])<=6 or sum(a.get('kind')=='ground' for a in data['assets'] if isinstance(a,dict))!=1:
+                    raise ValueError('Ollama returned a plan that does not match the required asset schema.')
+                break
+            except requests.exceptions.ReadTimeout as e:
+                raise TimeoutError('Ollama chưa trả kế hoạch sau 15 phút. Kiểm tra Ollama còn hoạt động rồi thử lại; nếu vẫn lỗi, chọn một model Ollama nhẹ hơn.') from e
+            except (json.JSONDecodeError,ValueError,KeyError,TypeError) as e:
+                if attempt==0:
+                    self.status('Kế hoạch','đang thử lại','Ollama trả về JSON không hợp lệ')
+                    continue
+                raise ValueError('Ollama trả kế hoạch JSON không hợp lệ sau 2 lần thử. Hãy bấm Tạo / tiếp tục bản đồ để thử lại.') from e
         if not 3<=len(data['assets'])<=6 or sum(a['kind']=='ground' for a in data['assets'])!=1: raise ValueError('Kế hoạch AI không hợp lệ: cần 3–6 asset, đúng một nền.')
         for i,a in enumerate(data['assets']): a['id']=f'asset_{i:02d}'
         p.write_text(json.dumps(data,ensure_ascii=False,indent=2),encoding='utf-8'); self.status('Kế hoạch','hoàn tất'); return data
