@@ -10,7 +10,23 @@ vars={}
 for label,key,default in [('Thư mục dự án (mỗi map một thư mục)','folder',''),('Model Ollama','model','qwen2.5:3b'),('Checkpoint ComfyUI (tên file chính xác)','checkpoint',''),('Workflow API JSON (tùy chọn)','workflow','')]:
     ttk.Label(frame,text=label).pack(anchor='w',pady=(8,0)); row=ttk.Frame(frame); row.pack(fill='x'); v=tk.StringVar(value=default); vars[key]=v; ttk.Entry(row,textvariable=v).pack(side='left',fill='x',expand=True)
     if key in ('folder','workflow'): ttk.Button(row,text='Chọn',command=lambda k=key,v=v:v.set(filedialog.askdirectory() if k=='folder' else filedialog.askopenfilename(filetypes=[('JSON','*.json')]))).pack(side='right')
-style=tk.StringVar(value='Tu tiên Pixel HD top-down'); ttk.Combobox(frame,textvariable=style,values=['Tu tiên Pixel HD top-down','Ninja Pixel HD side-scrolling','Kiếm hiệp Pixel HD top-down'],state='readonly').pack(fill='x',pady=8)
+style=tk.StringVar(value='Hiệp sĩ Pixel HD top-down')
+ttk.Combobox(
+    frame,
+    textvariable=style,
+    values=[
+        'Hiệp sĩ Pixel HD top-down',
+        'Hiệp sĩ Pixel HD side-scrolling',
+        'Tu tiên Pixel HD top-down',
+        'Ninja Pixel HD side-scrolling',
+        'Kiếm hiệp Pixel HD top-down',
+        'Trung cổ Fantasy Pixel HD',
+        'Pháp sư Pixel HD top-down',
+        'Thành trì Pixel HD top-down',
+        'Thế giới mở Pixel HD top-down'
+    ],
+    state='readonly'
+).pack(fill='x',pady=8)
 text=tk.Text(frame,height=4); text.pack(fill='x'); text.insert('1.0','Tạo map Thiên Kiếm Tông có đại điện, cổng, cây đào và nền gạch đá.')
 q=queue.Queue(); stop=threading.Event(); buttons=ttk.Frame(frame); buttons.pack(fill='x',pady=8)
 log=tk.Text(frame,height=12,bg='#101827',fg='#e5e7eb'); log.pack(fill='both',expand=True)
