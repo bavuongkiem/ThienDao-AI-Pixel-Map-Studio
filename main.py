@@ -8,6 +8,15 @@ if sys.stdout is None:
 if sys.stderr is None:
     sys.stderr = open(os.devnull, 'w', encoding='utf-8')
 
+# Prefer the app's bundled Microsoft runtime over older copies that may be
+# present on PATH (for example, an Office-private MSVCP140.dll).
+_bundle_dll_dir = None
+if getattr(sys, 'frozen', False):
+    _bundle_dll_dir = getattr(sys, '_MEIPASS', os.path.dirname(sys.executable))
+    os.environ['PATH'] = _bundle_dll_dir + os.pathsep + os.environ.get('PATH', '')
+    if hasattr(os, 'add_dll_directory'):
+        _dll_directory_handle = os.add_dll_directory(_bundle_dll_dir)
+
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import threading, queue
