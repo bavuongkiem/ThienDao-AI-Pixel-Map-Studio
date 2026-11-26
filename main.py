@@ -1,3 +1,13 @@
+import os
+import sys
+
+# PyInstaller windowed apps may start without console streams. Some image
+# processing dependencies (rembg/pymatting) still write diagnostics to them.
+if sys.stdout is None:
+    sys.stdout = open(os.devnull, 'w', encoding='utf-8')
+if sys.stderr is None:
+    sys.stderr = open(os.devnull, 'w', encoding='utf-8')
+
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import threading, queue
